@@ -52,7 +52,7 @@
   .tab { flex: 1; max-width: 160px; text-align: center; padding: 18px 0; font-size: 13px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
   .tab.active { color: var(--white); border-bottom-color: var(--lime); }
 
-  .day-submenu { display: flex; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: none; }
+  .day-submenu { display: flex; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: none; justify-content: center; }
   .day-submenu::-webkit-scrollbar { display: none; }
   .day-pill { flex-shrink: 0; padding: 12px 20px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; color: var(--muted2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; white-space: nowrap; }
   .day-pill.active { color: var(--lime); border-bottom-color: var(--lime); }
@@ -121,10 +121,8 @@
   .split-lbl { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted2); margin-top: 4px; }
 
   /* EXERCISES */
-  .exercise-card { border-bottom: 1px solid var(--border); padding: 20px 0; display: flex; gap: 16px; align-items: flex-start; }
-  .exercise-card:last-child { border-bottom: none; }
-  .exercise-figure { width: 80px; height: 80px; flex-shrink: 0; background: var(--card2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
-  .exercise-figure.loading-fig::after { content: ''; position: absolute; width: 20px; height: 20px; border: 1.5px solid var(--border2); border-top-color: var(--lime); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .exercise-card-simple { border-bottom: 1px solid var(--border); padding: 16px 0; display: flex; align-items: center; justify-content: space-between; }
+  .exercise-card-simple:last-child { border-bottom: none; }
   .exercise-info { flex: 1; }
   .exercise-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
   .exercise-sets-badge { font-size: 11px; color: var(--lime); letter-spacing: 0.06em; margin-bottom: 8px; }
@@ -201,6 +199,7 @@
   <div class="logo">Kilo<span class="logo-dot">.</span></div>
   <div class="nav-right">
     <span class="nav-user" id="navUser" style="display:none"></span>
+    <button class="nav-btn outline" id="loginBtn" onclick="openAuthModal('signin')">Log in</button>
     <button class="nav-btn outline" id="signOutBtn" style="display:none" onclick="signOut()">Sign out</button>
     <button class="nav-btn" id="navProBtn" onclick="goStripe()">Upgrade to Pro</button>
   </div>
@@ -316,11 +315,13 @@
   </div>
 
   <div id="tab-plan" style="display:none;">
+    <div id="planMacros"></div>
     <div class="day-submenu" id="planDayMenu"></div>
     <div id="planDayContent"></div>
   </div>
 
   <div id="tab-meals" style="display:none;">
+    <div id="mealsMacros"></div>
     <div class="day-submenu" id="mealsDayMenu"></div>
     <div id="mealsDayContent"></div>
   </div>
@@ -395,6 +396,7 @@ async function onUserLoggedIn() {
   document.getElementById('navUser').style.display = 'block';
   document.getElementById('navUser').textContent = currentUser.email;
   document.getElementById('signOutBtn').style.display = 'block';
+  document.getElementById('loginBtn').style.display = 'none';
   closeAuthModal();
   // Load existing plan if any
   const { data } = await sb.from('plans').select('*').eq('user_id', currentUser.id).order('created_at', {ascending:false}).limit(1);
@@ -414,6 +416,7 @@ async function onUserLoggedIn() {
 function onUserSignedOut() {
   document.getElementById('navUser').style.display = 'none';
   document.getElementById('signOutBtn').style.display = 'none';
+  document.getElementById('loginBtn').style.display = 'block';
   appData = null; weightLog = []; mealLog = {};
   document.getElementById('appSection').style.display = 'none';
   document.getElementById('setupSection').style.display = 'block';
@@ -536,8 +539,30 @@ function showTab(name) {
   if(name==='track') renderWeightHistory();
 }
 
+function macrosCard() {
+  const m = appData.macros;
+  const mx = Math.max(m.protein, m.carbs, m.fat);
+  return `<div class="screen" style="padding-bottom:0;">
+    <div class="result-card">
+      <div class="eyebrow">Daily nutrition target</div>
+      <div class="calories-row"><div class="cal-num">${m.calories.toLocaleString()}</div><div class="cal-unit">kcal / day</div></div>
+      <div class="macro-rows">
+        <div class="macro-row"><div class="macro-label" style="color:var(--lime);">Protein</div><div class="macro-track"><div class="macro-fill fill-p" style="width:${Math.round((m.protein/mx)*100)}%"></div></div><div class="macro-val">${m.protein}g</div></div>
+        <div class="macro-row"><div class="macro-label" style="color:#4EA8DE;">Carbs</div><div class="macro-track"><div class="macro-fill fill-c" style="width:${Math.round((m.carbs/mx)*100)}%"></div></div><div class="macro-val">${m.carbs}g</div></div>
+        <div class="macro-row"><div class="macro-label" style="color:#FF8C42;">Fat</div><div class="macro-track"><div class="macro-fill fill-f" style="width:${Math.round((m.fat/mx)*100)}%"></div></div><div class="macro-val">${m.fat}g</div></div>
+      </div>
+      <div class="macro-splits">
+        <div class="split-box"><div class="split-num" style="color:var(--lime);">${m.protein}g</div><div class="split-lbl">Protein</div></div>
+        <div class="split-box"><div class="split-num" style="color:#4EA8DE;">${m.carbs}g</div><div class="split-lbl">Carbs</div></div>
+        <div class="split-box"><div class="split-num" style="color:#FF8C42;">${m.fat}g</div><div class="split-lbl">Fat</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
 // PLAN
 function buildPlanMenu() {
+  document.getElementById('planMacros').innerHTML = macrosCard();
   document.getElementById('planDayMenu').innerHTML = appData.workout.map((d,i)=>
     `<div class="day-pill ${i===0?'active':''}" onclick="selectPlanDay(${i})">${d.day.slice(0,3)}</div>`
   ).join('');
@@ -550,25 +575,8 @@ function selectPlanDay(i) {
   const tm={strength:'tag-strength',cardio:'tag-cardio',hiit:'tag-hiit',rest:'tag-rest'};
   const content=document.getElementById('planDayContent');
 
-  // Macros only on first day
-  const macrosHtml = i===0 ? `
-    <div class="result-card">
-      <div class="eyebrow">Daily nutrition target</div>
-      <div class="calories-row"><div class="cal-num">${appData.macros.calories.toLocaleString()}</div><div class="cal-unit">kcal / day</div></div>
-      <div class="macro-rows">
-        <div class="macro-row"><div class="macro-label" style="color:var(--lime);">Protein</div><div class="macro-track"><div class="macro-fill fill-p" id="bp" style="width:0%"></div></div><div class="macro-val">${appData.macros.protein}g</div></div>
-        <div class="macro-row"><div class="macro-label" style="color:#4EA8DE;">Carbs</div><div class="macro-track"><div class="macro-fill fill-c" id="bc" style="width:0%"></div></div><div class="macro-val">${appData.macros.carbs}g</div></div>
-        <div class="macro-row"><div class="macro-label" style="color:#FF8C42;">Fat</div><div class="macro-track"><div class="macro-fill fill-f" id="bf" style="width:0%"></div></div><div class="macro-val">${appData.macros.fat}g</div></div>
-      </div>
-      <div class="macro-splits">
-        <div class="split-box"><div class="split-num" style="color:var(--lime);">${appData.macros.protein}g</div><div class="split-lbl">Protein</div></div>
-        <div class="split-box"><div class="split-num" style="color:#4EA8DE;">${appData.macros.carbs}g</div><div class="split-lbl">Carbs</div></div>
-        <div class="split-box"><div class="split-num" style="color:#FF8C42;">${appData.macros.fat}g</div><div class="split-lbl">Fat</div></div>
-      </div>
-    </div>` : '';
-
   if(d.type==='rest') {
-    content.innerHTML = `<div class="screen">${macrosHtml}<div class="result-card">
+    content.innerHTML = `<div class="screen" style="padding-top:8px;"><div class="result-card">
       <div class="day-view-header"><div class="day-view-title">${d.day}</div><div class="day-view-tag tag-rest">Rest</div></div>
       <div class="rest-day-view"><div class="rest-icon">🌿</div><div class="rest-title">Recovery day</div>
       <div class="rest-text">Your muscles grow during rest. Use today for light stretching, walking, or foam rolling. Stay hydrated and prioritise sleep.</div></div>
@@ -576,28 +584,14 @@ function selectPlanDay(i) {
     return;
   }
 
-  content.innerHTML = `<div class="screen">${macrosHtml}<div class="result-card">
+  content.innerHTML = `<div class="screen" style="padding-top:8px;"><div class="result-card">
     <div class="day-view-header"><div class="day-view-title">${d.day}</div><div class="day-view-tag ${tm[d.type]||'tag-rest'}">${d.focus}</div></div>
-    ${d.exercises.map((e,ei)=>`
-      <div class="exercise-card">
-        <div class="exercise-figure loading-fig" id="fig-${i}-${ei}"></div>
-        <div class="exercise-info">
-          <div class="exercise-name">${e.name}</div>
-          <div class="exercise-sets-badge">${e.sets}</div>
-          <div class="exercise-tip" id="etip-${i}-${ei}">Loading tip...</div>
-        </div>
+    ${d.exercises.map((e)=>`
+      <div class="exercise-card-simple">
+        <div class="exercise-name">${e.name}</div>
+        <div class="exercise-sets-badge">${e.sets}</div>
       </div>`).join('')}
   </div>${i===appData.workout.length-1?tipsHtml():''}${saveBanner()}${planPaywall()}</div>`;
-
-  if(i===0) {
-    const mx=Math.max(appData.macros.protein,appData.macros.carbs,appData.macros.fat);
-    setTimeout(()=>{
-      document.getElementById('bp') && (document.getElementById('bp').style.width=Math.round((appData.macros.protein/mx)*100)+'%');
-      document.getElementById('bc') && (document.getElementById('bc').style.width=Math.round((appData.macros.carbs/mx)*100)+'%');
-      document.getElementById('bf') && (document.getElementById('bf').style.width=Math.round((appData.macros.fat/mx)*100)+'%');
-    },100);
-  }
-  d.exercises.forEach((e,ei)=>loadExerciseFigure(e.name,i,ei));
 }
 
 function tipsHtml() {
@@ -622,38 +616,9 @@ function planPaywall() {
   </div>`;
 }
 
-// AI FIGURES
-async function loadExerciseFigure(name,di,ei) {
-  const key=name.toLowerCase().replace(/\s+/g,'-');
-  const figEl=document.getElementById(`fig-${di}-${ei}`);
-  const tipEl=document.getElementById(`etip-${di}-${ei}`);
-  if(!figEl) return;
-  if(figureCache[key]) {
-    figEl.classList.remove('loading-fig');
-    figEl.innerHTML=figureCache[key].svg;
-    if(tipEl) tipEl.textContent=figureCache[key].tip;
-    return;
-  }
-  try {
-    const res=await fetch('/api/figure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({exercise:name})});
-    if(res.ok) {
-      const d=await res.json();
-      figureCache[key]=d;
-      if(figEl){figEl.classList.remove('loading-fig');figEl.innerHTML=d.svg;}
-      if(tipEl) tipEl.textContent=d.tip;
-    } else { throw new Error(); }
-  } catch {
-    if(figEl){figEl.classList.remove('loading-fig');figEl.innerHTML=defaultFig();}
-    if(tipEl) tipEl.textContent='Focus on controlled form throughout the movement.';
-  }
-}
-
-function defaultFig() {
-  return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="#111"/><circle cx="40" cy="18" r="7" fill="none" stroke="#C8F135" stroke-width="2"/><line x1="40" y1="25" x2="40" y2="50" stroke="#C8F135" stroke-width="2"/><line x1="40" y1="33" x2="28" y2="42" stroke="#C8F135" stroke-width="2"/><line x1="40" y1="33" x2="52" y2="42" stroke="#C8F135" stroke-width="2"/><line x1="40" y1="50" x2="30" y2="65" stroke="#C8F135" stroke-width="2"/><line x1="40" y1="50" x2="50" y2="65" stroke="#C8F135" stroke-width="2"/></svg>`;
-}
-
 // MEALS
 function buildMealsMenu() {
+  document.getElementById('mealsMacros').innerHTML = macrosCard();
   document.getElementById('mealsDayMenu').innerHTML =
     DAYS.map((d,i)=>`<div class="day-pill ${i===0?'active':''}" onclick="selectMealsDay(${i})">${d.slice(0,3)}</div>`).join('');
   selectMealsDay(0);
