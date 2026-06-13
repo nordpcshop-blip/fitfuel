@@ -419,9 +419,10 @@
     <!-- Weight log -->
     <div class="result-card">
       <div class="section-eyebrow">Weight log</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Log your weight once a week — every Monday morning works best, before eating.</p>
       <div class="weight-input-row">
-        <input type="number" id="weightInput" placeholder="Enter weight (kg)" step="0.1">
-        <button class="btn-log" onclick="logWeight()">Log</button>
+        <input type="number" id="weightInput" placeholder="This week's weight (kg)" step="0.1">
+        <button class="btn-log" onclick="logWeight()">Log week</button>
       </div>
       <div class="chart-wrap" id="chartWrap" style="display:none;">
         <canvas id="weightChart"></canvas>
@@ -429,7 +430,7 @@
       <div id="weightHistory" class="weight-history"></div>
       <div class="empty-state" id="weightEmpty">
         <div class="empty-icon">⚖️</div>
-        Log your weight daily to track your progress over time.
+        Log your weight once a week to track your progress over time.
       </div>
     </div>
 
@@ -605,7 +606,8 @@ function showTab(name) {
 function logWeight() {
   const val = parseFloat(document.getElementById('weightInput').value);
   if (!val||val<20||val>400) return;
-  const entry = { weight: val, date: new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short'}) };
+  const weekNum = weightLog.length + 1;
+  const entry = { weight: val, date: 'Week ' + weekNum, fullDate: new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short'}) };
   weightLog.unshift(entry);
   localStorage.setItem('kilo_weights', JSON.stringify(weightLog));
   document.getElementById('weightInput').value='';
@@ -628,7 +630,7 @@ function renderWeightHistory() {
       changeHtml = `<span class="weight-change ${cls}">${arrow} ${Math.abs(diff)}kg</span>`;
     }
     return `<div class="weight-entry">
-      <span class="we-date">${e.date}</span>
+      <span class="we-date">${e.date} <span style="color:var(--muted);font-size:11px;">${e.fullDate||''}</span></span>
       <span><span class="we-val">${e.weight}kg</span>${changeHtml}</span>
     </div>`;
   }).join('');
