@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FitFuel — Your Plan, Your Macros</title>
+<title>KILO — Your Plan, Your Macros</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -291,7 +291,7 @@
 
 <div class="results" id="resultsSection">
   <div class="results-header">
-    <h2>Your FitFuel Plan</h2>
+    <h2>Your KILO Plan</h2>
     <p id="resultsSubtitle"></p>
   </div>
 
@@ -442,9 +442,9 @@ async function generatePlan() {
     document.getElementById('loadingScreen').style.display='none';
     renderResults(plan);
 
-    const uses = +(localStorage.getItem('fitfuel_uses')||0);
+    const uses = +(localStorage.getItem('KILO_uses')||0);
     if (uses >= 1) document.getElementById('paywallSection').style.display='block';
-    localStorage.setItem('fitfuel_uses', uses+1);
+    localStorage.setItem('KILO_uses', uses+1);
 
   } catch(err) {
     clearInterval(msgInterval);
