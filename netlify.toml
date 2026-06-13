@@ -5,3 +5,8 @@
   from = "/api/generate"
   to = "/.netlify/functions/generate"
   status = 200
+
+[[redirects]]
+  from = "/api/figure"
+  to = "/.netlify/functions/figure"
+  status = 200
