@@ -23,8 +23,7 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 20px 24px; border-bottom: 1px solid var(--border);
   }
-  .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
-  .logo span { color: var(--lime); }
+  .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; color: var(--white); }
   .nav-badge {
     font-size: 11px; background: var(--lime); color: #000;
     padding: 3px 10px; border-radius: 20px; font-weight: 600; cursor: pointer;
@@ -352,13 +351,14 @@
       <li>Weekly plan updates as you progress</li>
       <li>Export to PDF</li>
     </ul>
-    <button class="btn-primary" id="stripeBtn">Start Pro — $14/mo</button>
+    <button class="btn-primary" onclick="window.open('https://buy.stripe.com/test_8x2aEZbh2eOP3yPfsh8Zq00', '_blank')">Start Pro — $14/mo</button>
   </div>
 
   <button class="reset-btn" onclick="resetApp()">← Generate a new plan</button>
 </div>
 
 <script>
+const STRIPE_URL = 'https://buy.stripe.com/test_8x2aEZbh2eOP3yPfsh8Zq00';
 const state = { age:null,gender:null,weight:null,height:null,goal:null,activity:null,days:4,equipment:null,experience:null };
 
 function goStep2() {
@@ -509,10 +509,7 @@ function resetApp(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-document.getElementById('proBtn').onclick=()=>{
-  document.getElementById('paywallSection').style.display='block';
-  document.getElementById('paywallSection').scrollIntoView({behavior:'smooth'});
-};
+document.getElementById('proBtn').onclick = () => window.open(STRIPE_URL, '_blank');
 </script>
 </body>
 </html>
