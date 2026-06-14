@@ -196,6 +196,13 @@
   .tag-cardio { color: #4EA8DE; background: rgba(78,168,222,0.08); }
   .tag-rest { color: var(--muted2); background: rgba(100,100,100,0.1); }
   .tag-hiit { color: #FF8C42; background: rgba(255,140,66,0.08); }
+
+  /* PRICING TOGGLE */
+  .price-toggle { display: flex; background: var(--card2); border: 1px solid var(--border2); border-radius: 0; padding: 4px; margin-bottom: 20px; gap: 4px; }
+  .price-opt { flex: 1; text-align: center; padding: 10px 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: var(--muted2); cursor: pointer; transition: all 0.15s; position: relative; }
+  .price-opt.active { background: var(--lime); color: #000; }
+  .price-opt .save-badge { display: block; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; opacity: 0.8; }
+  .price-opt:not(.active) .save-badge { color: var(--lime); }
 </style>
 </head>
 <body>
@@ -352,15 +359,15 @@
       <div class="paywall-card">
         <h3>Full tracking — Pro only</h3>
         <p>Log all 7 days of meals, see calorie trends, and get weekly progress reports.</p>
-        <div class="price-row"><div class="price-big">$14</div><div class="price-unit">/ month</div></div>
-        <button class="btn-primary" onclick="goStripe()">Unlock Pro — $14 / month</button>
+        <div id="trackPricing"></div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-const STRIPE_URL = 'https://buy.stripe.com/test_8x2aEZbh2eOP3yPfsh8Zq00';
+const STRIPE_MONTHLY = 'https://buy.stripe.com/test_14A14pfxibCD5GXa7X8Zq01';
+const STRIPE_YEARLY = 'https://buy.stripe.com/test_5kQ5kFete7mn5GXbc18Zq02';
 const SUPABASE_URL = 'https://koxlvctlmnhtxtzxnqbu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_lxHYew8SoixtChSRB6td-A_sy1rOLBU';
 let sb = null;
@@ -377,7 +384,27 @@ const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun
 const MEAL_EMOJIS = ['🍳','🥗','🍎','🍽️'];
 const MEAL_TYPES = ['Breakfast','Lunch','Snack','Dinner'];
 
-function goStripe() { window.open(STRIPE_URL,'_blank'); }
+function goStripe(plan) { window.open(plan==='yearly'?STRIPE_YEARLY:STRIPE_MONTHLY,'_blank'); }
+
+let selectedPlan = 'monthly';
+function pricingBlock(idSuffix) {
+  return `<div class="price-toggle">
+      <div class="price-opt active" id="optM-${idSuffix}" onclick="setPlan('monthly','${idSuffix}')">Monthly<span class="save-badge">$10/mo</span></div>
+      <div class="price-opt" id="optY-${idSuffix}" onclick="setPlan('yearly','${idSuffix}')">Yearly<span class="save-badge">Save 17%</span></div>
+    </div>
+    <div class="price-row"><div class="price-big" id="priceBig-${idSuffix}">$10</div><div class="price-unit" id="priceUnit-${idSuffix}">/ month</div></div>
+    <button class="btn-primary" id="payBtn-${idSuffix}" onclick="goStripe(selectedPlan)">Unlock Pro — $10 / month</button>`;
+}
+function setPlan(plan, suffix) {
+  selectedPlan = plan;
+  document.querySelectorAll('.price-opt').forEach(el=>el.classList.remove('active'));
+  // activate matching toggles across all rendered blocks
+  document.querySelectorAll('[id^="optM-"]').forEach(el=>el.classList.toggle('active', plan==='monthly'));
+  document.querySelectorAll('[id^="optY-"]').forEach(el=>el.classList.toggle('active', plan==='yearly'));
+  document.querySelectorAll('[id^="priceBig-"]').forEach(el=>el.textContent = plan==='yearly'?'$99':'$10');
+  document.querySelectorAll('[id^="priceUnit-"]').forEach(el=>el.textContent = plan==='yearly'?'/ year':'/ month');
+  document.querySelectorAll('[id^="payBtn-"]').forEach(el=>el.textContent = plan==='yearly'?'Unlock Pro — $99 / year':'Unlock Pro — $10 / month');
+}
 
 // AUTH
 async function initAuth() {
@@ -541,7 +568,7 @@ function showApp() {
 function showTab(name) {
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['plan','meals','track'][i]===name));
   ['plan','meals','track'].forEach(n=>document.getElementById('tab-'+n).style.display=n===name?'block':'none');
-  if(name==='track') renderWeightHistory();
+  if(name==='track') { renderWeightHistory(); const tp=document.getElementById('trackPricing'); if(tp && !tp.innerHTML) tp.innerHTML = pricingBlock('track'); }
 }
 
 function macrosCard() {
@@ -615,9 +642,8 @@ function planPaywall() {
   return `<div class="paywall-card">
     <h3>Ready for Week 2?</h3>
     <p>Pro members get a new progressive workout plan every week, automatically updated as you improve.</p>
-    <div class="price-row"><div class="price-big">$14</div><div class="price-unit">/ month</div></div>
     <ul class="perks"><li>New workout plan every week</li><li>Full 7-day meal plans</li><li>Weight trend analysis</li><li>Progressive overload built in</li></ul>
-    <button class="btn-primary" onclick="goStripe()">Unlock Pro — $14 / month</button>
+    ${pricingBlock('plan')}
   </div>`;
 }
 
@@ -639,11 +665,10 @@ function selectMealsDay(i) {
         <div style="font-size:32px;margin-bottom:12px;">🔒</div>
         <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Pro members only</div>
         <div style="font-size:13px;color:var(--muted2);margin-bottom:20px;">Upgrade to get all 7 days of personalised meals.</div>
-        <button class="btn-primary" onclick="goStripe()" style="max-width:240px;margin:0 auto;display:block;">Unlock Pro — $14/mo</button>
+        <button class="btn-primary" onclick="goStripe(selectedPlan)" style="max-width:240px;margin:0 auto;display:block;">Unlock Pro</button>
       </div></div>
       <div class="paywall-card"><h3>Get all 7 days of meals</h3><p>Full week meal plans, updated every week, with recipes and a shopping list.</p>
-      <div class="price-row"><div class="price-big">$14</div><div class="price-unit">/ month</div></div>
-      <button class="btn-primary" onclick="goStripe()">Unlock Pro — $14 / month</button></div>
+      ${pricingBlock('mealsLock')}</div>
     </div>`;
     return;
   }
@@ -658,8 +683,7 @@ function selectMealsDay(i) {
     </div>`).join('')}
   </div>
   <div class="paywall-card"><h3>Get all 7 days of meals</h3><p>Full week meal plans, updated every week, with recipes and a shopping list.</p>
-  <div class="price-row"><div class="price-big">$14</div><div class="price-unit">/ month</div></div>
-  <button class="btn-primary" onclick="goStripe()">Unlock Pro — $14 / month</button></div>
+  ${pricingBlock('mealsDay1')}</div>
   </div>`;
 }
 
