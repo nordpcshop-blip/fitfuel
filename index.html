@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kilo</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#080808">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -196,7 +201,7 @@
 <body>
 
 <nav>
-  <div class="logo">Kilo<span class="logo-dot">.</span></div>
+  <div class="logo" style="display:flex;align-items:center;gap:8px;"><img src="/icon-192.png" alt="" style="width:24px;height:24px;object-fit:contain;">Kilo<span class="logo-dot">.</span></div>
   <div class="nav-right">
     <span class="nav-user" id="navUser" style="display:none"></span>
     <button class="nav-btn outline" id="loginBtn" onclick="openAuthModal('signin')">Log in</button>
@@ -358,7 +363,7 @@
 const STRIPE_URL = 'https://buy.stripe.com/test_8x2aEZbh2eOP3yPfsh8Zq00';
 const SUPABASE_URL = 'https://koxlvctlmnhtxtzxnqbu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_lxHYew8SoixtChSRB6td-A_sy1rOLBU';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let sb = null;
 
 const state = { age:null,gender:null,weight:null,height:null,goal:null,activity:null,days:4,equipment:null,experience:null };
 let appData = null;
@@ -734,7 +739,18 @@ async function toggleMeal(k,el) {
   }
 }
 
-initAuth();
+// Initialise Supabase once the deferred library has loaded, without blocking page render
+window.addEventListener('DOMContentLoaded', () => {
+  function tryInit() {
+    if (window.supabase) {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      initAuth();
+    } else {
+      setTimeout(tryInit, 50);
+    }
+  }
+  tryInit();
+});
 </script>
 </body>
 </html>
